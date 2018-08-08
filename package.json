@@ -4,7 +4,7 @@
   "description": "A puppeteer-based twilio-video.js recording bot",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "keywords": [
     "Twilio",
@@ -22,10 +22,8 @@
     "express-winston": "^2.6.0",
     "mkdirp": "^0.5.1",
     "puppeteer": "^1.6.2",
+    "twilio": "^3.19.0",
     "twilio-video": "^1.13.0",
     "winston": "^3.0.0"
-  },
-  "scripts": {
-    "start": "node index.js"
   }
 }

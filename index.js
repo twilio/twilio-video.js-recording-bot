@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const browserify = require('browserify-middleware');
 const express = require('express');
 const expressWinston = require('express-winston');
@@ -7,11 +9,13 @@ const { appendFile } = require('fs');
 const { sync: mkdirp } = require('mkdirp');
 const { join } = require('path');
 const puppeteer = require('puppeteer');
+const { AccessToken } = require('twilio').jwt;
 const winston = require('winston');
 
 const app = express();
 
 let browser = null;
+let page = null;
 let server = null;
 let actualRoomSid = null;
 let localParticipantSid = null;
@@ -47,7 +51,7 @@ async function main({ port, token, roomSid }) {
   You can send SIGUSR2 to this PID to cause recording-bot to stop recording and to
   disconnect from the Room. For example,
 
-    kill -SIGUSR2 ${process.pid}
+    kill -s USR2 ${process.pid}
 
   Happy recording!
 `);
@@ -56,7 +60,8 @@ async function main({ port, token, roomSid }) {
   server = await listen(port);
   logger.info(`Started HTTP server. Listening on ${port}.`);
   if (shouldClose) {
-    return close();
+    await close();
+    return;
   }
 
   logger.debug('Launching browser...');
@@ -67,19 +72,25 @@ async function main({ port, token, roomSid }) {
   });
   logger.info('Launched browser.');
   if (shouldClose) {
-    return close();
+    await close();
+    return;
   }
 
   logger.debug('Opening new page...');
-  const page = await browser.newPage();
+  page = await browser.newPage();
   logger.info('Opened new page.');
   if (shouldClose) {
-    return close();
+    await close();
+    return;
   }
 
   logger.debug(`Navigating to http://localhost:${port}...`);
   await page.goto(`http://localhost:${port}`, { waitUntil: 'domcontentloaded' });
   logger.info(`Navigated to http://localhost:${port}.`);
+  if (shouldClose) {
+    await close();
+    return;
+  }
 
   logger.debug('Registering callback(s)...');
   await Promise.all([
@@ -97,16 +108,24 @@ async function main({ port, token, roomSid }) {
           logger.error(`\n\n${indent(error.stack)}\n`);
           return;
         }
-        logger.info(`Wrote chunk (${buffer.byteLength} bytes)`);
+        logger.debug(`Wrote chunk (${buffer.byteLength} bytes)`);
       });
     })
   ]);
   logger.info('Registered callback(s).');
+  if (shouldClose) {
+    await close();
+    return;
+  }
 
   const {
     roomSid: actualRoomSid,
     localParticipantSid
   } = await page.evaluate(`main("${token}", "${roomSid}")`);
+  if (shouldClose) {
+    await close();
+    return;
+  }
 }
 
 function listen(port) {
@@ -131,6 +150,10 @@ async function close(error) {
     logger.debug('Closing HTTP server...');
     server.close();
     logger.info('Closed HTTP server.');
+  }
+
+  if (page) {
+    await page.evaluate('close()');
   }
 
   if (browser) {
@@ -167,11 +190,26 @@ process.on('SIGUSR2', () => {
   close();
 });
 
+const roomSid = process.argv.length > 2
+  ? process.argv[2]
+  : null;
+
+function createToken(identity) {
+  const token = new AccessToken(
+    process.env.ACCOUNT_SID,
+    process.env.API_KEY_SID,
+    process.env.API_KEY_SECRET);
+  token.identity = identity;
+  token.addGrant(new AccessToken.VideoGrant());
+  return token.toJwt();
+}
+
+const token = createToken('recording-bot');
+
 const configuration = {
   port: 3000,
-  // token: 'xyz',
-  token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImN0eSI6InR3aWxpby1mcGE7dj0xIn0.eyJqdGkiOiJTS2U0NGRiMjRhZmE5MTg1YjQ2YWZjMDE1NTg2OTQxZDlhLTE1MzM2ODUxNjEiLCJncmFudHMiOnsiaWRlbnRpdHkiOiJhc2QiLCJ2aWRlbyI6eyJjb25maWd1cmF0aW9uX3Byb2ZpbGVfc2lkIjoiVlMzZjc1ZTBmMTRlN2M4YjIwOTM4ZmM1MDkyZTgyZjIzYSJ9fSwiaWF0IjoxNTMzNjg1MTYxLCJleHAiOjE1MzM2ODg3NjEsImlzcyI6IlNLZTQ0ZGIyNGFmYTkxODViNDZhZmMwMTU1ODY5NDFkOWEiLCJzdWIiOiJBQzk2Y2NjOTA0NzUzYjMzNjRmMjQyMTFlOGQ5NzQ2YTkzIn0.XGRcdGZXFGCpNH9lB1EWXcl9a7y7oYtF4xyHQ2Nes8g',
-  roomSid: 'RM123'
+  token,
+  roomSid
 };
 
 main(configuration).catch(error => {

@@ -43,12 +43,12 @@ async function main(token, roomSid) {
 ${participants.length} RemoteParticipant${participants.length > 1 ? 's' : ''} \
 in the Room:\n\n`;
     participants.forEach(participant => {
-      message += `- RemoteParticipant ${participant.sid}\n`;
+      message += `  - RemoteParticipant ${participant.sid}\n`;
       participant.tracks.forEach(track => {
         if (track.kind === 'data') {
           return;
         }
-        message += `  - ${trackClassName[track.kind]} ${track.sid}\n`;
+        message += `    - ${trackClassName[track.kind]} ${track.sid}\n`;
       });
     });
     info(message);
@@ -56,6 +56,14 @@ in the Room:\n\n`;
       participant.tracks.forEach(track => trackSubscribed(track, participant));
     });
   }
+
+  room.on('participantConnected', participant => {
+    info(`RemoteParticipant ${participant.sid} connected.`);
+  });
+
+  room.on('participantDisconnected', participant => {
+    info(`RemoteParticipant ${participant.sid} disconnected.`);
+  });
 
   room.on('trackSubscribed', (track, participant) => {
     if (track.kind === 'data') {
@@ -94,13 +102,17 @@ function close(error) {
   }
   isClosing = true;
 
+  recorders.forEach((recorder, track) => {
+    trackUnsubscribed(track);
+  });
+
   if (room && room.state !== 'disconnected') {
-    debug('Disconnecting from Room...');
+    info('Disconnecting from Room...');
     room.disconnect();
   }
 }
 
-window.close;
+window.close = close;
 
 function trackSubscribed(track, participant) {
   if (track.kind === 'data') {
@@ -123,7 +135,7 @@ function trackUnsubscribed(track) {
   const recorder = recorders.get(track);
   recorders.delete(track);
   if (recorder) {
-    info(`Stop recording ${filename}.`);
+    info(`Stop recording ${recorder.filename}.`);
     recorder.stop();
   }
 }
@@ -154,6 +166,7 @@ function record(track, filepath) {
 
   const mimeType = `${track.kind}/webm`;
   const recorder = new MediaRecorder(stream, { mimeType });
+  recorder.filename = filename;
 
   recorders.set(track, recorder);
 
