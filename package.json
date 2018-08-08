@@ -1,0 +1,27 @@
+{
+  "name": "recording-bot",
+  "version": "0.1.0",
+  "description": "A puppeteer-based twilio-video.js recording bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Twilio",
+    "puppeteer",
+    "WebRTC",
+    "recording",
+    "video"
+  ],
+  "author": "Mark Andrus Roberts <mroberts@twilio.com>",
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "browserify-middleware": "^8.1.1",
+    "express": "^4.16.3",
+    "express-winston": "^2.6.0",
+    "mkdirp": "^0.5.1",
+    "puppeteer": "^1.6.2",
+    "twilio-video": "^1.13.0",
+    "winston": "^3.0.0"
+  }
+}
