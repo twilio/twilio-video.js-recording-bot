@@ -66,7 +66,7 @@ Send the process `SIGUSR2` to complete any recordings and cause the
 recording-bot to disconnect.
 
 ```
-kill -SIGUSR2 $PID
+kill -s USR2 $PID
 ```
 
 ### Accessing Recordings
