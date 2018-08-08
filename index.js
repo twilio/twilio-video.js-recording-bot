@@ -184,10 +184,15 @@ function stringToArrayBuffer(string) {
   return buf;
 }
 
-process.on('SIGUSR2', () => {
-  logger.debug('Received SIGUSR2.');
-  shouldClose = true;
-  close();
+[
+  'SIGUSR2',
+  'SIGINT'
+].forEach(signal => {
+  process.on(signal, () => {
+    logger.debug(`Received ${signal}.`);
+    shouldClose = true;
+    close();
+  });
 });
 
 const roomSid = process.argv.length > 2
