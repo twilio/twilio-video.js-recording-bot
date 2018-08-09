@@ -28,7 +28,7 @@ In almost all cases, you'll get better performance and quality using Twilio's
 own [recording solution for Group Rooms](https://www.twilio.com/docs/video/api/recordings-resource).
 That being said, if regulations restrict you from using Twilio's recording
 solution or if you are using Peer-to-Peer Rooms, you may be interested in this
-approach. **Just don't expect great performance or quality!**
+approach. **Just remember this is a participant in the room recording what it receives, not a media server**
 
 Installation
 ------------
