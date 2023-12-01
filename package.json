@@ -21,7 +21,7 @@
     "express": "^4.16.3",
     "express-winston": "^2.6.0",
     "mkdirp": "^0.5.1",
-    "puppeteer": "^1.6.2",
+    "puppeteer": "^18.2.0",
     "twilio": "^3.19.0",
     "twilio-video": "^1.13.0",
     "winston": "^3.0.0"
